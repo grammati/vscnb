@@ -81,7 +81,6 @@ class ObservableNotebookPanel {
     vscode.workspace.onDidChangeTextDocument(
       event => {
         if (this.isPreviewOf(event.document.uri)) {
-          event.contentChanges;
           this._update();
         }
       },
@@ -98,17 +97,18 @@ class ObservableNotebookPanel {
     this.n += 1;
 
     const source = this._editor.document.getText();
+    const cells = source.split(/\/\/%%[^\n]*\n/).map(s => s.trim).filter(s => s);
+    console.log(cells);
 
-    let result = ts.transpileModule(source, {
-      compilerOptions: { module: ts.ModuleKind.CommonJS }
-    });
+    // let result = ts.transpileModule(source, {
+    //   compilerOptions: { module: ts.ModuleKind.CommonJS }
+    // });
+    // console.log(JSON.stringify(result));
 
-    console.log(JSON.stringify(result));
-
-    this._panel.webview.html = this._getHtmlForWebview();
+    this._panel.webview.html = this._getHtmlForWebview(cells);
   }
 
-  private _getHtmlForWebview() {
+  private _getHtmlForWebview(cells: string[]) {
     // Local path to main script run in the webview
     const t = this._editor.document.getText();
     const runtimeSrc = vscode.Uri.file(
@@ -118,6 +118,7 @@ class ObservableNotebookPanel {
         "runtime.umd.js"
       )
     ).with({ scheme: "vscode-resource" });
+
     return `<!DOCTYPE html>
     <meta charset="utf-8">
     <title>Earthquakes!</title>
