@@ -30,7 +30,7 @@ class ObservableNotebookPanel {
     console.log("createOrShow");
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-      vscode.window.showErrorMessage("No editor is open");
+      vscode.window.showErrorMessage("No editor is open"); // TODO: create one
     } else {
       const panel = vscode.window.createWebviewPanel(
         ObservableNotebookPanel.viewType,
@@ -45,6 +45,7 @@ class ObservableNotebookPanel {
         }
       );
 
+      // TODO: allow more than one
       ObservableNotebookPanel.currentPanel = new ObservableNotebookPanel(
         panel,
         editor
@@ -77,6 +78,7 @@ class ObservableNotebookPanel {
       null,
       this._disposables
     );
+    this._panel.webview.postMessage({})
 
     vscode.workspace.onDidChangeTextDocument(
       event => {
@@ -97,7 +99,7 @@ class ObservableNotebookPanel {
     this.n += 1;
 
     const source = this._editor.document.getText();
-    const cells = source.split(/\/\/%%[^\n]*\n/).map(s => s.trim).filter(s => s);
+    const cells = source.split(/\/\/%%[^\n]*\n/).map(s => s.trim()).filter(s => s);
     console.log(cells);
 
     // let result = ts.transpileModule(source, {
@@ -110,12 +112,14 @@ class ObservableNotebookPanel {
 
   private _getHtmlForWebview(cells: string[]) {
     // Local path to main script run in the webview
-    const t = this._editor.document.getText();
-    const runtimeSrc = vscode.Uri.file(
+    console.log(cells);
+    //const t = this._editor.document.getText();
+
+    const scriptSrc = vscode.Uri.file(
       path.join(
         __dirname,
-        "../node_modules/@observablehq/runtime/dist",
-        "runtime.umd.js"
+        "../media",
+        "index.js"
       )
     ).with({ scheme: "vscode-resource" });
 
@@ -124,35 +128,14 @@ class ObservableNotebookPanel {
     <title>Earthquakes!</title>
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/@observablehq/notebook-inspector@1/dist/notebook-inspector-style.css">
     <body>
-    <h1>Hello</h1>
+    <h1>Notebook</h1>
     <div id='content'>1</div>
     <div id='content2'>2</div>
-    <script type="module">
-    
-    import {Runtime,Inspector} from "https://unpkg.com/@observablehq/runtime@3/dist/runtime.js";
-    import hello from "https://api.observablehq.com/@tmcw/hello-world.js?v=3";
-    console.log(hello);
-    
-    const notebook = {
-      id: 'kljdflakdl',
-      modules: [{
-        id: 'oefdlkfadlfa',
-        variables: [{
-          name: 'x',
-          value: () => 23
-        }, {
-          name: 'y',
-          inputs: ['x'],
-          value: (x) => x * 2
-        }]
-      }]
-    }
-
-    const runtime = new Runtime();
-    //const mainModule = runtime.module(notebook, Inspector.into(document.querySelector('#content')));
-    const helloModule = runtime.module(hello, Inspector.into(document.querySelector('#content2')));
-    
-    </script>`;
+    <script src="${scriptSrc}"></script>
+    </body>
+    </html>
+    `
+    ;
   }
 
   public dispose() {

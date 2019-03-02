@@ -11,7 +11,7 @@ declare module "@observablehq/runtime" {
     pending(): void;
     fulfilled(value: any): void;
     rejected(error: Error): void;
-    static into(container: string): ObserverFactory;
+    static into(container: string|Element): ObserverFactory;
   }
 
   type DefineFn = (runtime: Runtime, observer: IObserver) => IModule;
