@@ -22,9 +22,9 @@ class ObservableNotebookPanel {
 
   public static readonly viewType = "observable.Notebook";
 
-  private readonly _panel: vscode.WebviewPanel;
-  private readonly _editor: vscode.TextEditor;
-  private _disposables: vscode.Disposable[] = [];
+  private readonly panel: vscode.WebviewPanel;
+  private readonly editor: vscode.TextEditor;
+  private disposables: vscode.Disposable[] = [];
 
   public static createOrShow(): void {
     console.log("createOrShow");
@@ -53,21 +53,19 @@ class ObservableNotebookPanel {
     }
   }
 
-  n: number;
   constructor(panel: vscode.WebviewPanel, editor: vscode.TextEditor) {
-    this._panel = panel;
-    this._editor = editor;
-    this.n = 1;
+    this.panel = panel;
+    this.editor = editor;
 
     // Set the webview's initial html content
-    this._update();
+    this.renderNotebook();
 
     // Listen for when the panel is disposed
     // This happens when the user closes the panel or when the panel is closed programatically
-    this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
     // Handle messages from the webview
-    this._panel.webview.onDidReceiveMessage(
+    this.panel.webview.onDidReceiveMessage(
       message => {
         switch (message.command) {
           case "alert":
@@ -76,30 +74,30 @@ class ObservableNotebookPanel {
         }
       },
       null,
-      this._disposables
+      this.disposables
     );
-    this._panel.webview.postMessage({})
 
     vscode.workspace.onDidChangeTextDocument(
       event => {
         if (this.isPreviewOf(event.document.uri)) {
-          this._update();
+          this.update();
         }
       },
       null,
-      this._disposables
+      this.disposables
     );
   }
 
   private isPreviewOf(resource: vscode.Uri): boolean {
-    return this._editor.document.uri.fsPath === resource.fsPath;
+    return this.editor.document.uri.fsPath === resource.fsPath;
   }
 
-  private _update(): void {
-    this.n += 1;
-
-    const source = this._editor.document.getText();
-    const cells = source.split(/\/\/%%[^\n]*\n/).map(s => s.trim()).filter(s => s);
+  private update(): void {
+    const source = this.editor.document.getText();
+    const cells = source
+      .split(/\/\/%%[^\n]*\n/)
+      .map(s => s.trim())
+      .filter(s => s);
     console.log(cells);
 
     // let result = ts.transpileModule(source, {
@@ -107,45 +105,46 @@ class ObservableNotebookPanel {
     // });
     // console.log(JSON.stringify(result));
 
-    this._panel.webview.html = this._getHtmlForWebview(cells);
+    this.panel.webview.postMessage({
+      type: 'notebook.update',
+      payload: {
+        cells
+      }
+    });
   }
 
-  private _getHtmlForWebview(cells: string[]) {
-    // Local path to main script run in the webview
-    console.log(cells);
-    //const t = this._editor.document.getText();
+  private renderNotebook() {
+    this.panel.webview.html = this.getNotebookHtml();
+  }
 
+  private getNotebookHtml() {
     const scriptSrc = vscode.Uri.file(
-      path.join(
-        __dirname,
-        "../media",
-        "index.js"
-      )
+      path.join(__dirname, "../media", "notebook.js")
     ).with({ scheme: "vscode-resource" });
 
     return `<!DOCTYPE html>
-    <meta charset="utf-8">
-    <title>Earthquakes!</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/@observablehq/notebook-inspector@1/dist/notebook-inspector-style.css">
-    <body>
-    <h1>Notebook</h1>
-    <div id='content'>1</div>
-    <div id='content2'>2</div>
-    <script src="${scriptSrc}"></script>
-    </body>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Earthquakes!</title>
+      <link rel="stylesheet" type="text/css" href="https://unpkg.com/@observablehq/notebook-inspector@1/dist/notebook-inspector-style.css">
+      </head>
+      <body>
+        <div id='content'></div>
+        <script src="${scriptSrc}"></script>
+      </body>
     </html>
-    `
-    ;
+    `;
   }
 
   public dispose() {
     ObservableNotebookPanel.currentPanel = undefined;
 
     // Clean up our resources
-    this._panel.dispose();
+    this.panel.dispose();
 
-    while (this._disposables.length) {
-      const x = this._disposables.pop();
+    while (this.disposables.length) {
+      const x = this.disposables.pop();
       if (x) {
         x.dispose();
       }

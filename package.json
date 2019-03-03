@@ -34,6 +34,7 @@
 		"@observablehq/parser": "^1.0.1",
 		"@observablehq/runtime": "^3.0.6",
 		"@observablehq/stdlib": "^2.0.8",
+		"@types/d3": "^5.7.1",
 		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.21",
 		"d3": "^5.9.1",

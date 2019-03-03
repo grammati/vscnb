@@ -1,3 +1,9 @@
 declare module "@observablehq/parser" {
-    function parseCell(code: string): object;
+    interface Cell {
+        async: boolean;
+        start: number;
+        end: number;
+        
+    }
+    function parseCell(code: string): Cell;
 }
