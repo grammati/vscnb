@@ -5,13 +5,14 @@ import {
   IObserver,
   ObserverFactory
 } from "@observablehq/runtime";
-import {parseCell} from '@observablehq/parser'
+import {parseCell} from '@observablehq/parser';
+import demo from './demo';
 
 interface UpdateEvent {
   type: string;
   payload: {
     cells: string[];
-  }
+  };
 }
 
 class Notebook {
@@ -22,7 +23,8 @@ class Notebook {
 
   constructor() {
     this.runtime = new Runtime();
-    this.module = this.runtime.module();
+    // this.module = this.runtime.module();
+    this.module = demo;
     this.observer = Inspector.into("#content");
 
     this.latest = undefined;
@@ -32,7 +34,7 @@ class Notebook {
       this.latest = cells;
     });
 
-    window.setInterval(() => this.update(), 1000);
+    // window.setInterval(() => this.update(), 1000);
   }
 
   update() {

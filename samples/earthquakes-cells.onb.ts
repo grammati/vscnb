@@ -1,6 +1,8 @@
+// Hypothetical format with explicit wrapping of code into "cell" objects, "viewof" objects
 import { md, DOM } from "@observablehq/runtime";
 import * as d3 from "d3";
 import * as topojson from "topojson";
+import { cell, viewof } from "../onb";
 
 //%%
 md`
@@ -15,8 +17,8 @@ const s = 450;
 //%%
 const radius = 225;
 
-//%%
-const globe = (rotation: number, world: d3.GeoPermissibleObjects) => {
+//%% globe
+cell(async () => {
   var c = DOM.context2d(s, s);
   var canvas = c.canvas;
 
@@ -24,7 +26,7 @@ const globe = (rotation: number, world: d3.GeoPermissibleObjects) => {
     .geoOrthographic()
     .scale(radius)
     .translate([s / 2, s / 2]);
-  projection.rotate([rotation, 0]);
+  projection.rotate([parseInt(await rotation.value), 0]);
   var path = d3.geoPath(projection, c);
 
   // Draw the seas.
@@ -39,7 +41,7 @@ const globe = (rotation: number, world: d3.GeoPermissibleObjects) => {
   c.lineWidth = 0.35;
   c.fillStyle = "mintcream";
   c.beginPath();
-  path(world);
+  path(world.value);
   c.fill();
   c.stroke();
 
@@ -55,32 +57,39 @@ const globe = (rotation: number, world: d3.GeoPermissibleObjects) => {
   });
 
   return canvas;
-};
+});
 
-//%% viewof
-const rotation = () => {
+//%%
+const rotation = viewof(() => {
   var rotation = DOM.range(0, 360, 1);
-  rotation.value = 90;
+  rotation.value = '90';
   return rotation;
-};
+});
 
 //%% viewof
 const quakeSize = DOM.range(0, 12);
 
 //%% viewof
-const quakeColor = () => {
+const quakeColor = viewof(() => {
   var input = DOM.input("color");
   input.value = "#ff0000";
   return input;
-};
+});
+
+//%%
+interface Quake {
+  properties: {
+    mag: number
+  }
+}
 
 //%%
 const quakeRadius = () => {
   const scale = d3
     .scaleSqrt()
     .domain([0, 100])
-    .range([0, quakeSize]);
-  return function(quake) {
+    .range([0, parseInt(quakeSize.value)]);
+  return function(quake: Quake) {
     return scale(Math.exp(quake.properties.mag));
   };
 };
@@ -91,7 +100,7 @@ const url =
 
 //%%
 const quakes = (async () => {
-  return (await fetch(url)).json() as { features: { properties: object }[] };
+  return (await fetch(url)).json() as { features: Quake[] };
 })();
 
 //%%
@@ -100,11 +109,11 @@ const exampleQuake = (async () => {
 })();
 
 //%%
-const world = (async () => {
+const world = cell(async () => {
   var world = await (await fetch(
     "https://unpkg.com/world-atlas@1/world/110m.json"
   )).json();
-  return topojson.feature(world, world.objects.countries);
-})();
+  return await topojson.feature(world, world.objects.countries);
+});
 
 //%%
